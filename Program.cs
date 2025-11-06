@@ -55,9 +55,39 @@ double CalculateSalesTotal(IEnumerable<string> salesFiles)
 
     return salesTotal;
 }
-var salesTotal = CalculateSalesTotal(salesFiles); // Add this line of code
+var salesTotal = CalculateSalesTotal(salesFiles); 
 
 File.AppendAllText(Path.Combine(salesTotalDirectory, "totals.txt"), $"{salesTotal:F2}{Environment.NewLine}");
+
+
+GenerateSalesSummaryReport(salesFiles, salesTotalDirectory);
+
+void GenerateSalesSummaryReport(IEnumerable<string> salesFilesList, string outputDirectory)
+{
+    var details = new List<(string FileName, double Amount)>();
+    double grandTotal = 0;
+
+    foreach (var file in salesFilesList)
+    {
+        var json = File.ReadAllText(file);
+        SalesData? data = JsonSerializer.Deserialize<SalesData?>(json);
+        double amount = data?.Total ?? 0;
+        grandTotal += amount;
+        details.Add((Path.GetFileName(file), amount));
+    }
+
+    var reportPath = Path.Combine(outputDirectory, "sales_summary.txt");
+    using var writer = new StreamWriter(reportPath, false);
+    writer.WriteLine("Sales Summary");
+    writer.WriteLine("***********************************");
+    writer.WriteLine($" Total Sales: {grandTotal.ToString("C2")}{Environment.NewLine}");
+    writer.WriteLine(" Details:");
+    foreach (var d in details)
+    {
+        writer.WriteLine($"  {d.FileName}: {d.Amount.ToString("C2")}");
+    }
+}
+
 record SalesData(double Total);
 
 
